@@ -248,3 +248,137 @@ WITH CustomerClaims AS
 SELECT *
 FROM CustomerClaims;
 
+--Create a stored procedure that displays all customers.
+Create procedure getcust
+As
+Begin 
+Select *from 
+Customers
+End
+
+Exec getcust
+
+--Create a stored procedure that accepts a CustomerID and displays only that customer's details.
+Create procedure getCstbyId
+@CustID Int
+As
+Begin 
+Select CustomerId,CustomerName,city FROM 
+Customers
+Where CustomerID=@CustID
+End
+
+Exec getCstbyID 2;
+
+
+--Stored Procedure with 2 Parameters  Display policies based on: CustomerID ,PolicyName
+
+CREATE PROCEDURE sp_GetPolicyDetails
+    @CustID INT,
+    @PolicyName VARCHAR(100)
+AS
+BEGIN
+    SELECT
+        Cust.CustomerID,
+        Cust.CustomerName,
+        Po.PolicyName,
+        Cl.ClaimAmount,
+        Cl.ClaimDate,
+        Cl.ClaimStatus
+    FROM Customers Cust
+    INNER JOIN Polices Po
+        ON Cust.CustomerID = Po.CustomerID
+    INNER JOIN Claims Cl
+        ON Po.PolicyID = Cl.PolicyID
+    WHERE Cust.CustomerID = @CustID
+      AND Po.PolicyName = @PolicyName;
+END;
+
+EXEC sp_GetPolicyDetails
+    @CustID = 1,
+    @PolicyName = 'Family Health Plan';
+    
+-- Stored Procedure + INNER JOIN (Easy) Create a stored procedure that displays: Customer Name, Policy Name, Sum Insured, Premium Amount
+CREATE PROCEDURE CustDetails
+AS
+BEGIN 
+     SELECT Cust.CustomerName,
+            Po.PolicyName,
+            Po.SumInsured,
+            Po.premiumAmount
+            FROM Customers Cust
+            INNER JOIN 
+            Polices Po ON 
+            Cust.CustomerID = Po.CustomerID 
+END 
+
+EXEC CustDetails;
+
+--Stored Procedure + JOIN + Parameter Display all claims for a specific customer.
+CREATE PROCEDURE DisplayCustdetail
+@CustID INT
+AS
+BEGIN 
+     SELECT 
+     Cust.CustomerName,
+     Po.policyName,
+     Cl.ClaimAmount,
+     Cl.claimStatus
+     FROM Customers Cust
+     INNER JOIN Polices Po ON 
+     Cust.CustomerID= Po.CustomerID
+     INNER JOIN Claims Cl
+     ON Po.PolicyID = Cl.PolicyID
+
+END
+
+EXEC DisplayCustdetail 2;
+
+--JOIN + Aggregate Function 
+CREATE PROCEDURE sp_GetCustomerClaimSummry
+AS
+BEGIN
+    SELECT
+        C.CustomerID,
+        C.CustomerName,
+        COUNT(CL.ClaimID) AS TotalClaims,
+        SUM(CL.ClaimAmount) AS TotalClaimAmount
+    FROM Customers C
+    INNER JOIN Polices P
+        ON C.CustomerID = P.CustomerID
+    INNER JOIN Claims CL
+        ON P.PolicyID = CL.PolicyID
+    GROUP BY
+        C.CustomerID,
+        C.CustomerName;
+END;
+
+EXEC sp_GetCustomerClaimSummry;
+
+
+--City Wise Policy Details 
+CREATE PROCEDURE SpCityWiseCustomerDetails
+    @City VARCHAR(100)
+AS
+BEGIN
+    SELECT
+        Cust.CustomerName,
+        Cust.City,
+        P.PolicyName,
+        COUNT(C.ClaimID) AS TotalClaims,
+        ISNULL(SUM(C.ClaimAmount), 0) AS TotalClaimAmount
+    FROM Customers Cust
+    INNER JOIN Polices P
+        ON Cust.CustomerID = P.CustomerID
+    LEFT JOIN Claims C
+        ON P.PolicyID = C.PolicyID
+    WHERE Cust.City = @City
+    GROUP BY
+        Cust.CustomerName,
+        Cust.City,
+        P.PolicyName;
+END;
+
+EXEC SpCityWiseCustomerDetails 'PUNe';
+
+
